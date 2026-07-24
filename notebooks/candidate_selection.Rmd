@@ -1,0 +1,98 @@
+---
+title: "Selection of 10 Klebsiella pneumoniae genomes for analysis"
+author: "Eden Black"
+output: html_document
+---
+```{r message=FALSE}
+library(tidyverse)
+```
+
+
+candidates.tsv was assembled from the NCBI database searching for complete Klebsiella
+pneumoniae genomes from RefSeq using the following code in the NCBI CLI:
+
+datasets summary genome taxon "Klebsiella pneumoniae" \
+  --assembly-level complete --assembly-source refseq \
+  --as-json-lines \
+| dataformat tsv genome --fields \
+accession,source_database,organism-name,organism-infraspecific-strain,\
+assminfo-level,assmstats-total-sequence-len,assmstats-number-of-contigs,\
+assmstats-total-number-of-chromosomes,assmstats-gc-percent,\
+checkm-completeness,checkm-contamination,assminfo-sequencing-tech,\
+assminfo-biosample-accession,assminfo-biosample-isolation-source,\
+assminfo-biosample-host,assminfo-biosample-host-disease,\
+assminfo-biosample-geo-loc-name,assminfo-biosample-collection-date,\
+assminfo-bioproject,assminfo-bioproject-lineage-title,assminfo-release-date \
+> data/candidates.tsv
+
+As a case study for this minimal analysis, the aim is to analyse the genomes of different 
+samples from a single geographical location to identify similarities and differences,
+particularly intra- and inter-strain.
+
+```{r data-import}
+candidates = read_tsv('data/candidates.tsv') %>%
+    mutate(`Assembly BioSample Accession` = as.factor(`Assembly BioSample Accession`))
+colnames(candidates)
+```
+
+```{r locations}
+candidate_locations = candidates %>%
+    group_by(`Assembly BioSample Geographic location`) %>%
+    summarise(count = n()) %>%
+    filter(count >= 10) %>%
+    arrange(desc(count))
+
+head(candidate_locations, 10)
+```
+
+While many samples have their locations logged only by country, two cities appear on the
+top ten list of locations: Seoul (85) and Nanchang (83).
+
+``` {r qc}
+seoul_candidates = candidates %>%
+    filter(`Assembly BioSample Geographic location` == 'South Korea: Seoul' &
+    `Assembly Stats Number of Contigs` <= 10 &
+    `CheckM completeness` >= 98 &
+    `CheckM contamination` < 1)
+
+nrow(seoul_candidates)
+seoul_candidates %>% count(`Assembly BioProject Accession`, sort = TRUE)
+sprintf('For samples from Seoul, the mean completeness is %.1f and mean contamination is %.1f',
+    mean(seoul_candidates$`CheckM completeness`),
+    mean(seoul_candidates$`CheckM contamination`))
+
+nanchang_candidates = candidates %>%
+    filter(`Assembly BioSample Geographic location` == 'China:Nanchang' &
+    `Assembly Stats Number of Contigs` <= 10 &
+    `CheckM completeness` >= 98 &
+    `CheckM contamination` < 1)
+
+nrow(nanchang_candidates)
+nanchang_candidates %>% count(`Assembly BioProject Accession`, sort = TRUE)
+sprintf('For samples from Nanchang, the mean completeness is %.1f and mean contamination is %.1f',
+    mean(nanchang_candidates$`CheckM completeness`),
+    mean(nanchang_candidates$`CheckM contamination`))
+```
+
+71 candidates from Nanchang passed QC, compared to only 10 from Seoul. As such, the samples
+from Nanchang were taken forward.
+
+The final step for candidate selection was sample independence. Genomes submitted in the
+same project are more likely to be the same or very closely-related isolate 
+sampled repeatedly. As 28 samples were submitted as individuals, they were selected to be 
+taken forward for multilocus sequence typing.
+
+```{r nanchang-filter}
+nanchang_candidates = nanchang_candidates %>%
+    filter(!(`Assembly BioProject Accession` %in% c('PRJNA1474683', 'PRJNA672246',
+    'PRJNA1469284', 'PRJNA1344441')))
+
+nrow(nanchang_candidates)
+```
+
+Finally, the accession numbers of the candidate genomes were exported to a .txt file to
+download from NCBI.
+
+```{r write-txt}
+write_lines(nanchang_candidates$`Assembly Accession`, 'data/accession.txt')
+```

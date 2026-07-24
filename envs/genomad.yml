@@ -1,0 +1,7 @@
+name: kp-genomad
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - genomad=1.12.0

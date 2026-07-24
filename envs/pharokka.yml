@@ -1,0 +1,7 @@
+name: kp-pharokka
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - pharokka=1.10.1
