@@ -37,7 +37,7 @@ for sample in $(cat "$ACCESSIONS"); do
         genomad end-to-end \
             --threads "$THREADS" \
             --splits "$SPLITS" \
-            --disable-nn-classification \
+            --disable-nn-classification \         # NN computationally expensive and doesn't seem to be used for prophage identification
             "$genome" "$OUT_DIR/$sample" "$DB"
 done
 

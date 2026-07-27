@@ -3,6 +3,4 @@ databases/
 data/raw/
 data/genomes/
 
-results/genomad
-results/pharokka
-results/defensefinder
+results/
