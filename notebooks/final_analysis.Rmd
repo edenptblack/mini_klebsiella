@@ -1,0 +1,116 @@
+---
+title: "Analysis of prophages in 10 Klebsiella pneumoniae genomes"
+author: "Eden Black"
+output: 
+  github_document:
+    html_preview: true
+    df_print: kable
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 8, fig.height = 4,
+                      fig.align = "center")
+
+library(tidyverse)
+library(knitr)
+library(here)
+
+theme_set(theme_minimal(base_size = 11))
+theme_update(
+  panel.grid.minor = element_blank(),
+  plot.title       = element_text(face = "bold")
+)
+
+here::i_am("notebooks/final_analysis.Rmd")
+```
+
+10 *Klebsiella pneumoniae* genomes isolated in Nanchang, China were chosen for analysis. 6 of the genomes are from the dominant ST11 strain (which accounts for 60% of infections
+in China (SOURCE)) and one each of the other four strain types with NCBI entries for isolates from Nanchang. With one genome per lineage for these STs, statistical testing is
+not plausible - this is instead a descriptive analysis.
+
+```{r read-tables}
+samples <- read_tsv(here("results", "tables", "samples.tsv"))
+prophages <- read_tsv(here("results", "tables", "prophages.tsv"))
+
+# First 1000 rows of CARD are N/A, so read_tsv assigns boolean type by default
+# Fix with guess_max = Inf
+prophage_genes <- read_tsv(here("results", "tables", "prophage_genes.tsv"),
+                           guess_max = Inf)
+defence_systems <- read_tsv(here("results", "tables", "defense_systems.tsv"))
+defence_genes <- read_tsv(here("results", "tables", "defense_genes.tsv"))
+
+# Treat strain as a factor and order by lineage
+samples <- samples |>
+  mutate(st = factor(paste0("ST", st))) |>
+  arrange(st, sample) |>
+  mutate(sample = fct_inorder(sample))
+
+#Table for looking up strain of each sample
+st_lookup <- select(samples, sample, st)
+```
+
+```{r prophage-burden}
+prophage_size <- prophages |>
+  group_by(sample) |>
+  summarise(prophage_bp = sum(length), .groups = "drop")
+
+burden <- samples |>
+  left_join(prophage_size, by = "sample") |>
+  select(sample, st, n_prophages, n_prophage_cds, prophage_bp)
+
+burden
+```
+Table 1: Summary of the sequence type and prophage levels of each *K. pneumoniae* genome
+
+```{r burden-chart}
+burden_long <- burden |>
+  select(sample, st, `Number of prophages` = n_prophages,
+         `Prophage sequence length (kb)` = prophage_bp) |>
+         pivot_longer(c(`Number of prophages`, `Prophage sequence length (kb)`))
+
+
+p_burden <- ggplot(burden_long, aes(x = fct(sample), y = value, fill = st)) +
+  geom_col() +
+  facet_wrap(~name, scales = "free") +
+  labs(title = "ST11 genomes have a higher prophage burden",
+    subtitle = "Ten complate K. pneumoniae genomes; prophages called with geNomad",
+    x = NULL, y = NULL, fill = "Sequence type"
+  ) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.4, vjust = 0.6))
+
+p_burden
+```
+Figure 1: Bar chart of the number of prophages (left) and the combined sequence length of prophages (right) in each *K. pneumoniae* genome
+
+The plots show an expected strong correlation between the number of prophages in a bacterial genome and the sequence length of the prophages. More interestingly, all isolates of
+the ST11 sequence type contained as many or more integrated prophages as the ST86 isolate, which contained the most prophages of any of the other sequence types. ST11 is both
+highly virulent and frequently displays AMR characteristics (SOURCE), both traits often encoded by prophage morons. To investigate, the prophage gene information from pharokka
+was examined.
+
+```{r gene-categorisation}
+categories <- prophage_genes |>
+  mutate(category = replace_na(category, "unknown function"),
+         category = as.factor(category)) |>
+  count(category, sort = TRUE) |>
+  mutate(percent = round(100 * n / sum(n), 1))
+
+categories
+```
+Table 2: Prophage gene categories
+
+```{r categories-chart}
+p_categories <- ggplot(categories, aes(y = fct_rev(category), x = n,
+                                       fill = category == "unknown function")) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_manual(values = c("TRUE" = "red", "FALSE" = "blue")) +
+  labs(title = "43.9% of prophage genes have no known function",
+       subtitle = sprintf("%d CDS across %d prophages; annotated with Pharokka (PHROG categories)",
+                          nrow(prophage_genes), nrow(prophages)),
+       y = NULL, x = "Number of CDS") +
+  theme(axis.text.y = element_text(angle = 45, hjust = 1, vjust = 1,
+                                   size = 6))
+
+p_categories
+```
+Figure 2: Bar chart of the number of genes across the 10 combined genome assigned to each category by PHROG
+
