@@ -1,10 +1,16 @@
 ---
 title: "Selection of 10 Klebsiella pneumoniae genomes for analysis"
 author: "Eden Black"
-output: html_document
+output: 
+    github_document:
+        html_preview: false
+        df_print: kable
 ---
 ```{r message=FALSE}
 library(tidyverse)
+library(here)
+
+here::i_am("notebooks/candidate_selection.Rmd")
 ```
 
 
@@ -30,7 +36,7 @@ samples from a single geographical location to identify similarities and differe
 particularly intra- and inter-strain.
 
 ```{r data-import}
-candidates = read_tsv('data/candidates.tsv') %>%
+candidates = read_tsv(here('data', 'candidates.tsv')) %>%
     mutate(`Assembly BioSample Accession` = as.factor(`Assembly BioSample Accession`))
 colnames(candidates)
 ```
@@ -94,5 +100,5 @@ Finally, the accession numbers of the candidate genomes were exported to a .txt 
 download from NCBI.
 
 ```{r write-txt}
-write_lines(nanchang_candidates$`Assembly Accession`, 'data/accession.txt')
+write_lines(nanchang_candidates$`Assembly Accession`, here('data', 'accession.txt'))
 ```
