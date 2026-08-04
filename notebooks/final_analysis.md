@@ -428,11 +428,15 @@ to examine multiple ST11 isolates from different studies, the fact that
 all were sourced in Nanchang means that recent shared ancestry is
 possible and cannot be assumed to be independent. Scaling this analysis
 to the thousands of genomes required for association testing would
-require explicit correction for population structure. Ideally, geNomad
-would be complimented by an explicit *att*-site identification approach,
-which can delineate elements more precisely. Furthermore, the struggle
-to detect cryptophages mean the content identified here should be
-considered a lower bound.
+require explicit correction for population structure. In addition,
+geNomad was used with neural network classification disabled due to
+limitations of the hardware being used to perform the analysis, meaning
+prophage classification was limited to the use of markers, rather than
+also using nucelotide sequence classification and combining the results.
+Ideally, geNomad would be complimented by an explicit *att*-site
+identification approach, which can delineate elements more precisely.
+Furthermore, the struggle to detect cryptophages mean the content
+identified here should be considered a lower bound.
 
 Natural extensions of the findings here include functional annotation
 for the 43.9% of uncharacterised genes using remote homology or
