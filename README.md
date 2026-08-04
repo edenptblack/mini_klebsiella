@@ -30,7 +30,7 @@ Environments are recorded as .yml files. Each primary tool (geNomad, Pharokka, D
 
 Each primary tool requires a database; the commands for installing these databases are not recorded in the repository (may be added later), but can be found in the documentation for each tool. 
 
-Execution order: candidate_selection.Rmd -> scripts (01-06) -> final_analysis.Rmd
+Execution order: candidate_selection.Rmd -> scripts (01-02) -> 10 candidates selected manually based on MLST scores and sample independence, written into "accession_selected.txt" -> scripts (03-06) -> final_analysis.Rmd
 
 ## Limitations
 
